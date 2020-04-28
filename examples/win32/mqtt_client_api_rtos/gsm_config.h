@@ -47,11 +47,6 @@
 #define GSM_CFG_AT_ECHO                         1
 #define GSM_CFG_INPUT_USE_PROCESS               1
 
-/* Enable network, conn and netconn APIs */
-#define GSM_CFG_NETWORK                         1
-#define GSM_CFG_CONN                            1
-#define GSM_CFG_NETCONN                         1
-
 /* After user configuration, call default config to merge config together */
 #include "gsm/gsm_config_default.h"
 

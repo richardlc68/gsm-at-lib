@@ -54,7 +54,7 @@ main(void) {
     /* Configure device by unlocking SIM card */
     if (configure_sim_card()) {
         printf("SIM card configured. Adding delay to stabilize SIM card.\r\n");
-        gsm_delay(10000);
+        gsm_delay(1000);
     } else {
         printf("Cannot configure SIM card! Is it inserted, pin valid and not under PUK? Closing down...\r\n");
         while (1) { gsm_delay(1000); }
@@ -84,6 +84,7 @@ main(void) {
  */
 static gsmr_t
 gsm_callback_func(gsm_evt_t* evt) {
+    wchar_t NameBuffer[256];
     switch (gsm_evt_get_type(evt)) {
         case GSM_EVT_INIT_FINISH: printf("Library initialized!\r\n"); break;
         /* Process and print registration change */
@@ -92,8 +93,24 @@ gsm_callback_func(gsm_evt_t* evt) {
         case GSM_EVT_NETWORK_OPERATOR_CURRENT: network_utils_process_curr_operator(evt); break;
         /* Process signal strength */
         case GSM_EVT_SIGNAL_STRENGTH: network_utils_process_rssi(evt); break;
-
+        case GSM_EVT_BAUDRATE_CHANGED:
+          wprintf(L"change baudrate = %d\r\n",evt->evt.ipr.baudrate);
+          return gsm_change_baudrate(evt->evt.ipr.baudrate);
+          break;
+        case GSM_EVT_CMD_TIMEOUT:
+          wprintf(L"timeout\r\n");
+          break;
+        case GSM_EVT_NETWORK_REG_EGPRS_CHANGED: network_utils_process_reg_egprs_change(evt); break;
+        /* Process current network operator */
         /* Other user events here... */
+        case GSM_EVT_NETWORK_INFO:
+          mbstowcs(NameBuffer, evt->evt.network.info, 256);
+          wprintf(L"network info: %ls\r\n",NameBuffer);
+          break;
+        case GSM_EVT_PDP_IP_ADDR:
+          wprintf(L"myIP: %d.%d.%d.%d\r\n",evt->evt.pdp.ip.ip[0],evt->evt.pdp.ip.ip[1],evt->evt.pdp.ip.ip[2],evt->evt.pdp.ip.ip[3]);
+          break;
+          
 
         default: break;
     }

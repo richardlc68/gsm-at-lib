@@ -250,7 +250,6 @@ gsm_conn_evt(gsm_evt_t* evt) {
     gsm_conn_p c;
     c = gsm_conn_get_from_evt(evt);
     switch (gsm_evt_get_type(evt)) {
-#if GSM_CFG_CONN
         case GSM_EVT_CONN_ACTIVE: {
             printf("Connection active\r\n");
             //gsm_conn_send(c, request_data, sizeof(request_data) - 1, NULL, 0);
@@ -279,7 +278,6 @@ gsm_conn_evt(gsm_evt_t* evt) {
             gsm_conn_recved(c, p);
             break;
         }
-#endif /* GSM_CFG_CONN */
         default: break;
     }
     return gsmOK;
@@ -356,7 +354,6 @@ gsm_evt(gsm_evt_t* evt) {
             }
             break;
         }
-#if GSM_CFG_NETWORK
         case GSM_EVT_NETWORK_ATTACHED: {
             gsm_ip_t ip;
 
@@ -372,7 +369,6 @@ gsm_evt(gsm_evt_t* evt) {
             printf("\r\n---\r\n--- Network detached! ---\r\n---\r\n");
             break;
         }
-#endif /* GSM_CFG_NETWORK */
 #if GSM_CFG_CALL
         case GSM_EVT_CALL_READY: {
             printf("Call is ready!\r\n");

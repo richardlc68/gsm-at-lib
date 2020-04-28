@@ -47,17 +47,12 @@
 #define GSM_CFG_INPUT_USE_PROCESS           1
 #define GSM_CFG_AT_ECHO                     0
 
-#define GSM_CFG_NETWORK                     1
-
-#define GSM_CFG_CONN                        1
 #define GSM_CFG_SMS                         1
 #define GSM_CFG_CALL                        1
 #define GSM_CFG_PHONEBOOK                   1
 #define GSM_CFG_USSD                        1
 
 #define GSM_CFG_USE_API_FUNC_EVT            1
-
-#define GSM_CFG_NETCONN                     1
 
 #define GSM_CFG_MEM_CUSTOM                  1
 

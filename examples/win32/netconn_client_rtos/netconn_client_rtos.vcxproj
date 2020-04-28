@@ -143,6 +143,7 @@
     <ClCompile Include="..\..\..\gsm_at_lib\src\api\gsm_netconn.c" />
     <ClCompile Include="..\..\..\gsm_at_lib\src\api\gsm_network_api.c" />
     <ClCompile Include="..\..\..\gsm_at_lib\src\gsm\gsm.c" />
+    <ClCompile Include="..\..\..\gsm_at_lib\src\gsm\gsm_bg95.c" />
     <ClCompile Include="..\..\..\gsm_at_lib\src\gsm\gsm_buff.c" />
     <ClCompile Include="..\..\..\gsm_at_lib\src\gsm\gsm_call.c" />
     <ClCompile Include="..\..\..\gsm_at_lib\src\gsm\gsm_conn.c" />
@@ -161,6 +162,7 @@
     <ClCompile Include="..\..\..\gsm_at_lib\src\gsm\gsm_phonebook.c" />
     <ClCompile Include="..\..\..\gsm_at_lib\src\gsm\gsm_ping.c" />
     <ClCompile Include="..\..\..\gsm_at_lib\src\gsm\gsm_sim.c" />
+    <ClCompile Include="..\..\..\gsm_at_lib\src\gsm\gsm_sim800.c" />
     <ClCompile Include="..\..\..\gsm_at_lib\src\gsm\gsm_sms.c" />
     <ClCompile Include="..\..\..\gsm_at_lib\src\gsm\gsm_threads.c" />
     <ClCompile Include="..\..\..\gsm_at_lib\src\gsm\gsm_timeout.c" />

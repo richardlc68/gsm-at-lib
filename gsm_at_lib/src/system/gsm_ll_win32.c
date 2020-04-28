@@ -78,10 +78,11 @@ send_data(const void* data, size_t len) {
 /**
  * \brief           Configure UART (USB to UART)
  */
-static void
-configure_uart(uint32_t baudrate) {
+void
+configure_uart(uint32_t port, uint32_t baudrate) {
     DCB dcb = { 0 };
     dcb.DCBlength = sizeof(dcb);
+    wchar_t com_ports[256];
 
     /*
      * On first call,
@@ -89,26 +90,17 @@ configure_uart(uint32_t baudrate) {
      * as generic read and write
      */
     if (!initialized) {
-        static const LPCWSTR com_ports[] = {
-            L"\\\\.\\COM23",
-            L"\\\\.\\COM12",
-            L"\\\\.\\COM9",
-            L"\\\\.\\COM8",
-            L"\\\\.\\COM4"
-        };
-        for (size_t i = 0; i < sizeof(com_ports) / sizeof(com_ports[0]); ++i) {
-            com_port = CreateFile(com_ports[i],
-                GENERIC_READ | GENERIC_WRITE,
-                0,
-                0,
-                OPEN_EXISTING,
-                0,
-                NULL
-            );
-            if (GetCommState(com_port, &dcb)) {
-                printf("COM PORT %s opened!\r\n", (const char *)com_ports[i]);
-                break;
-            }
+        swprintf(com_ports, sizeof(com_ports), L"\\\\.\\COM%d", port);
+        com_port = CreateFile(com_ports,
+            GENERIC_READ | GENERIC_WRITE,
+            0,
+            0,
+            OPEN_EXISTING,
+            0,
+            NULL
+        );
+        if (GetCommState(com_port, &dcb)) {
+            wprintf(L"%s opened!\r\n", com_ports);
         }
     }
 
@@ -235,7 +227,7 @@ gsm_ll_init(gsm_ll_t* ll) {
     }
 
     /* Step 3: Configure AT port to be able to send/receive data to/from GSM device */
-    configure_uart(ll->uart.baudrate);          /* Initialize UART for communication */
+    configure_uart(ll->uart.device_port, ll->uart.baudrate);          /* Initialize UART for communication */
     initialized = 1;
     return gsmOK;
 }
