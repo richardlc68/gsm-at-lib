@@ -8,7 +8,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 /* APN settings to attach to network */
-#define NETWORK_APN                 "internet"
+#define NETWORK_APN                 "LTEMOBILE.APN"
 #define NETWORK_APN_USER            ""
 #define NETWORK_APN_PASS            ""
 

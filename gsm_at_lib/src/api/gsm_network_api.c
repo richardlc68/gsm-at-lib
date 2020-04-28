@@ -35,8 +35,6 @@
 #include "gsm/gsm_private.h"
 #include "gsm/gsm_network.h"
 
-#if GSM_CFG_NETWORK || __DOXYGEN__
-
 /* Network credentials used during connect operation */
 static const char* network_apn;
 static const char* network_user;
@@ -130,4 +128,3 @@ gsm_network_request_detach(void) {
     return res;
 }
 
-#endif /* GSM_CFG_NETWORK || __DOXYGEN__ */

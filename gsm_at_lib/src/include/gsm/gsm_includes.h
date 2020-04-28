@@ -57,12 +57,8 @@
 #if GSM_CFG_PHONEBOOK || __DOXYGEN__
 #include "gsm/gsm_phonebook.h"
 #endif /* GSM_CFG_PHONEBOOK || __DOXYGEN__ */
-#if GSM_CFG_CONN || __DOXYGEN__
 #include "gsm/gsm_conn.h"
-#endif /* GSM_CFG_CONN || __DOXYGEN__ */
-#if GSM_CFG_NETCONN || __DOXYGEN__
 #include "gsm/gsm_netconn.h"
-#endif /* GSM_CFG_NETCONN || __DOXYGEN__ */
 #if GSM_CFG_USSD || __DOXYGEN__
 #include "gsm/gsm_ussd.h"
 #endif /* GSM_CFG_USSD || __DOXYGEN__ */

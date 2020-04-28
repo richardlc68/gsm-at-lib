@@ -8,6 +8,29 @@ static int16_t
 rssi;
 
 /**
+ * \brief           Process and print EGPRS network registration status update
+ * \param[in]       evt: GSM event data
+ */
+void
+network_utils_process_reg_egprs_change(gsm_evt_t* evt) {
+    gsm_network_reg_egprs_status_t stat;
+
+    stat = gsm_network_get_reg_egprs_status();        /* Get EGPRS network status */
+
+    /* Print to console */
+    printf("EGPRS Network registration status changed. New status is: ");
+    switch (stat) {
+        case GSM_NETWORK_REG_EGPRS_STATUS_CONNECTED: printf("Connected to home network!\r\n"); break;
+        case GSM_NETWORK_REG_EGPRS_STATUS_CONNECTED_ROAMING: printf("Connected to network and roaming!\r\n"); break;
+        case GSM_NETWORK_REG_EGPRS_STATUS_SEARCHING: printf("Searching for network!\r\n"); break;
+        case GSM_NETWORK_REG_EGPRS_STATUS_SIM_ERR: printf("SIM CARD ERROR!\r\n"); break;
+        default: printf("Other\r\n");
+    }
+
+    GSM_UNUSED(evt);
+}
+
+/**
  * \brief           Process and print network registration status update
  * \param[in]       evt: GSM event data
  */

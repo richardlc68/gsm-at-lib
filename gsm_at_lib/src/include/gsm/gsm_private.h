@@ -48,6 +48,16 @@ extern "C" {
  */
 
 /**
+ * \brief           Receive character structure to handle full line terminated with `\n` character
+ */
+typedef struct {
+    char data[128];                             /*!< Received characters */
+    size_t len;                                 /*!< Length of valid characters */
+} gsm_recv_t;
+
+extern gsm_recv_t recv_buff;
+
+/**
  * \brief           List of possible messages
  */
 typedef enum {
@@ -69,10 +79,9 @@ typedef enum {
     GSM_CMD_NETWORK_ATTACH,                     /*!< Attach to a network */
     GSM_CMD_NETWORK_DETACH,                     /*!< Detach from network */
 
-    GSM_CMD_CIPMUX_SET,
-    GSM_CMD_CIPRXGET_SET,
-    GSM_CMD_CSTT_SET,
-
+    GSM_CMD_SOCKET_OPEN,
+    GSM_CMD_SOCKET_SEND,
+    GSM_CMD_SOCKET_CLOSE,
 
 
     /* AT commands according to the V.25TER */
@@ -171,6 +180,7 @@ typedef enum {
     GSM_CMD_CFUN_GET,                           /*!< Get Phone Functionality */
     GSM_CMD_CREG_SET,                           /*!< Network Registration set output */
     GSM_CMD_CREG_GET,                           /*!< Get current network registration status */
+    GSM_CMD_CGREG_GET,                          /*!< Get current EGPRS Network Registration Status */
     GSM_CMD_CBC,                                /*!< Battery Charge */
     GSM_CMD_CNUM,                               /*!< Subscriber Number */
 
@@ -197,6 +207,12 @@ typedef enum {
     GSM_CMD_CUSD_GET,                           /*!< Unstructured Supplementary Service Data, Get command */
     GSM_CMD_CUSD,                               /*!< Unstructured Supplementary Service Data, Execute command */
     GSM_CMD_CSSN,                               /*!< Supplementary Services Notification */
+    GSM_CMD_CGPADDR,                            /*!< Show PDP Address */
+
+   /* begin AT commands for chipcom module */    
+    GSM_CMD_CIPMUX_SET,
+    GSM_CMD_CIPRXGET_SET,
+    GSM_CMD_CSTT_SET,
 
     GSM_CMD_CIPMUX,                             /*!< Start Up Multi-IP Connection */
     GSM_CMD_CIPSTART,                           /*!< Start Up TCP or UDP Connection */
@@ -229,6 +245,21 @@ typedef enum {
     GSM_CMD_CIPSGTXT,                           /*!< Select GPRS PDP context */
     GSM_CMD_CIPTKA,                             /*!< Set TCP Keepalive Parameters */
     GSM_CMD_CIPSSL,                             /*!< Connection SSL function */
+  /* end of AT commands for chipcom module */
+
+  /* begin AT commands for Quetel module */
+    GSM_CMD_QURCCFG,                            /*!< Configure URC Indication Option */
+    GSM_CMD_QCFG_BAND,                          /*!< Set band */
+    GSM_CMD_QCFG_NWSCANMODE,                    /*!< Configure RAT(s) to be Searched */
+    GSM_CMD_QCFG_NWSCANSEQ,                     /*!< Configure RAT Searching Sequence */
+    GSM_CMD_QCFG_TCP_RETRANSCFG,                /*!< Configure maximum interval time and number of TCP retransmission */
+    GSM_CMD_QNWINFO,                            /*!< Query Network Information */
+    GSM_CMD_QICSGP,                             /*!< Configure Parameters of a TCP/IP Context */
+    GSM_CMD_QIACT_SET,                          /*!< Activate a PDP Context */
+    GSM_CMD_QIACT_GET,                          /*!< Get activate PDP Context(s) */
+    GSM_CMD_QISTATE,                            /*!< Query Socket Service Status */
+    GSM_CMD_QIOPEN,                             /*!< Start Up TCP or UDP Connection -- same as GSM_CMD_CIPSTART*/
+/* end of AT commands for Quetel module */
 
     GSM_CMD_SMS_ENABLE,
     GSM_CMD_CMGD,                               /*!< Delete SMS Message */
@@ -400,7 +431,6 @@ typedef struct gsm_msg {
             uint32_t num;                       /*!< Number in case format is number */
         } cops_set;                             /*!< Set operator settings */
 
-#if GSM_CFG_CONN || __DOXYGEN__
         /* Connection based commands */
         struct {
             gsm_conn_t** conn;                  /*!< Pointer to pointer to save connection used */
@@ -431,7 +461,6 @@ typedef struct gsm_msg {
             size_t* bw;                         /*!< Number of bytes written so far */
             uint8_t val_id;                     /*!< Connection current validation ID when command was sent to queue */
         } conn_send;                            /*!< Structure to send data on connection */
-#endif /* GSM_CFG_CONN || __DOXYGEN__ */
 #if GSM_CFG_SMS || __DOXYGEN__
         struct {
             const char* num;                    /*!< Phone number */
@@ -508,13 +537,11 @@ typedef struct gsm_msg {
             size_t resp_write_ptr;              /*!< Write pointer for response */
             uint8_t quote_det;                  /*!< Information if quote has been detected */
         } ussd;                                 /*!< Execute USSD command */
-#if GSM_CFG_NETWORK || __DOXYGEN__
         struct {
             const char* apn;                    /*!< APN address */
             const char* user;                   /*!< APN username */
             const char* pass;                   /*!< APN password */
         } network_attach;                       /*!< Settings for network attach */
-#endif /* GSM_CFG_NETWORK || __DOXYGEN__ */
     } msg;                                      /*!< Group of different possible message contents */
 } gsm_msg_t;
 
@@ -605,11 +632,43 @@ typedef struct {
  */
 typedef struct {
     gsm_network_reg_status_t status;            /*!< Network registration status */
+    gsm_network_reg_egprs_status_t egprs;       /*!< EGPRS Network registration status */
     gsm_operator_curr_t curr_operator;          /*!< Current operator information */
 
+    char info[20];                              /*!< network info, LTE/NBIoT etc */
     uint8_t is_attached;                        /*!< Flag indicating device is attached and PDP context is active */
     gsm_ip_t ip_addr;                           /*!< Device IP address when network PDP context is enabled */
 } gsm_network_t;
+
+/* Data structure for the platform data of "me" */
+struct me_data {
+    /* AT command const string mapping */
+    char* GSM_CMD_CGACT_SET_0;      
+    char* GSM_CMD_CGACT_SET_1;
+
+    /* AT command mapping */
+    gsm_cmd_t GSM_CMD_SOCKET_OPEN;  
+    gsm_cmd_t GSM_CMD_SOCKET_SEND;
+    gsm_cmd_t GSM_CMD_SOCKET_CLOSE;
+    gsm_cmd_t GSM_CMD_SOCKET_STA;
+
+    /* specific option */
+    uint8_t creg_cgreg_skip_first;  
+    uint32_t high_baudrate;
+    uint32_t reset_gpio;
+    uint32_t power_on_gpio;
+
+    /* low level operation */
+    void (*power_on)(struct me_data* ppdata);
+    void (*power_off)(struct me_data* ppdata);
+    void (*reset)(struct me_data* pdata);
+
+    /* core function mapping*/
+    gsmr_t (*gsmi_initiate_cmd)(gsm_msg_t *msg);
+    gsmr_t (*gsmi_process_sub_cmd)(gsm_msg_t *msg, uint8_t *is_ok, uint16_t *is_error);
+    void (*gsmi_parse_received_plus)(uint8_t *is_ok, uint16_t *is_error, gsm_recv_t* rcv);
+    void (*gsmi_parse_socket_sta)(uint8_t* is_ok, gsm_recv_t* rcv);
+};
 
 /**
  * \brief           GSM modules structure
@@ -628,13 +687,11 @@ typedef struct {
     int16_t             rssi;                   /*!< RSSI signal strength. `0` = invalid, `-53 % -113` = valid */
 
     /* Device specific */
-#if GSM_CFG_CONN || __DOXYGEN__
     uint8_t             active_conns_cur_parse_num; /*!< Current connection number used for parsing */
 
     gsm_conn_t          conns[GSM_CFG_MAX_CONNS];   /*!< Array of all connection structures */
     gsm_ipd_t           ipd;                    /*!< Connection incoming data structure */
     uint8_t             conn_val_id;            /*!< Validation ID increased each time device connects to network */
-#endif /* GSM_CFG_CONNS || __DOXYGEN__ */
 #if GSM_CFG_SMS || __DOXYGEN__
     gsm_sms_t           sms;                    /*!< SMS information */
 #endif /* GSM_CFG_SMS || __DOXYGEN__ */
@@ -644,6 +701,7 @@ typedef struct {
 #if GSM_CFG_CALL || __DOXYGEN__
     gsm_call_t          call;                   /*!< Call information */
 #endif /* GSM_CFG_CALL || __DOXYGEN__ */
+    struct me_data *me;
 } gsm_modules_t;
 
 /**
@@ -705,6 +763,7 @@ typedef struct {
     uint8_t r;                                  /*!< Remaining bytes in UTF-8 sequence */
     gsmr_t res;                                 /*!< Current result of processing */
 } gsm_unicode_t;
+
 
 /**
  * \}
@@ -771,6 +830,128 @@ extern const size_t         gsm_dev_model_map_size;
 #define GSM_ISVALIDASCII(x)                 (((x) >= 32 && (x) <= 126) || (x) == '\r' || (x) == '\n')
 
 #define GSM_PORT2NUM(port)                  ((uint32_t)(port))
+
+/* Temporary macros, only available for inside gsmi_process_sub_cmd function */
+/* Set new command, but first check for error on previous */
+#define SET_NEW_CMD_CHECK_ERROR(new_cmd) do {   \
+    if (!*(is_error)) {                         \
+        n_cmd = (new_cmd);                      \
+    }                                           \
+} while (0)
+
+/* Set new command, ignore result of previous */
+#define SET_NEW_CMD(new_cmd) do {               \
+    n_cmd = (new_cmd);                          \
+} while (0)
+
+/**
+ * \brief           Free connection send data memory
+ * \param[in]       m: Send data message type
+ */
+#define CONN_SEND_DATA_FREE(m)      do {            \
+    if ((m) != NULL && (m)->msg.conn_send.fau) {    \
+        (m)->msg.conn_send.fau = 0;                 \
+        if ((m)->msg.conn_send.data != NULL) {      \
+            GSM_DEBUGF(GSM_CFG_DBG_CONN | GSM_DBG_TYPE_TRACE,   \
+                "[CONN] Free write buffer fau: %p\r\n", (void *)(m)->msg.conn_send.data);   \
+            gsm_mem_free_s((void **)&((m)->msg.conn_send.data)); \
+        }                                           \
+    }                                               \
+} while (0)
+
+/**
+ * \brief           Send connection callback for "data send"
+ * \param[in]       m: Command message
+ * \param[in]       err: Error of type \ref gsmr_t
+ */
+#define CONN_SEND_DATA_SEND_EVT(m, err)  do { \
+    CONN_SEND_DATA_FREE(m);                         \
+    gsm.evt.type = GSM_EVT_CONN_SEND;               \
+    gsm.evt.evt.conn_data_send.res = err;           \
+    gsm.evt.evt.conn_data_send.conn = (m)->msg.conn_send.conn;  \
+    gsm.evt.evt.conn_data_send.sent = (m)->msg.conn_send.sent_all;  \
+    gsmi_send_conn_cb((m)->msg.conn_send.conn, NULL);   \
+} while (0)
+
+/**
+ * \brief           Send reset sequence event
+ * \param[in]       m: Command message
+ * \param[in]       err: Error of type \ref gsmr_t
+ */
+#define RESET_SEND_EVT(m, err)  do {                \
+    gsm.evt.evt.reset.res = err;                    \
+    gsmi_send_cb(GSM_EVT_RESET);                    \
+} while (0)
+
+/**
+ * \brief           Send restore sequence event
+ * \param[in]       m: Connection send message
+ * \param[in]       err: Error of type \ref gsmr_t
+ */
+#define RESTORE_SEND_EVT(m, err)  do {              \
+    gsm.evt.evt.restore.res = err;                  \
+    gsmi_send_cb(GSM_EVT_RESTORE);                  \
+} while (0)
+
+/**
+ * \brief           Send operator scan sequence event
+ * \param[in]       m: Command message
+ * \param[in]       err: Error of type \ref gsmr_t
+ */
+#define OPERATOR_SCAN_SEND_EVT(m, err)  do {        \
+    gsm.evt.evt.operator_scan.res = err;            \
+    gsm.evt.evt.operator_scan.ops = (m)->msg.cops_scan.ops; \
+    gsm.evt.evt.operator_scan.opf = *(m)->msg.cops_scan.opf;\
+    gsmi_send_cb(GSM_EVT_OPERATOR_SCAN);            \
+} while (0)
+
+ /**
+ * \brief           Send SMS delete operation event
+ * \param[in]       m: SMS delete message
+ * \param[in]       err: Error of type \ref gsmr_t
+ */
+#define SMS_SEND_DELETE_EVT(m, err)     do {        \
+    gsm.evt.evt.sms_delete.res = err;               \
+    gsm.evt.evt.sms_delete.mem = (m)->msg.sms_delete.mem;   \
+    gsm.evt.evt.sms_delete.pos = (m)->msg.sms_delete.pos;   \
+    gsmi_send_cb(GSM_EVT_SMS_DELETE);               \
+} while (0)
+
+/**
+ * \brief           Send SMS read operation event
+ * \param[in]       m: SMS read message
+ * \param[in]       err: Error of type \ref gsmr_t
+ */
+#define SMS_SEND_READ_EVT(m, err)     do {          \
+    gsm.evt.evt.sms_read.res = err;                 \
+    gsm.evt.evt.sms_read.entry = (m)->msg.sms_read.entry;   \
+    gsmi_send_cb(GSM_EVT_SMS_READ);                 \
+} while (0)
+
+/**
+ * \brief           Send SMS read operation event
+ * \param[in]       mm: SMS list message
+ * \param[in]       err: Error of type \ref gsmr_t
+ */
+#define SMS_SEND_LIST_EVT(mm, err)     do {        \
+    gsm.evt.evt.sms_list.mem = gsm.m.sms.mem[0].current;\
+    gsm.evt.evt.sms_list.entries = (mm)->msg.sms_list.entries;  \
+    gsm.evt.evt.sms_list.size = (mm)->msg.sms_list.ei;  \
+    gsm.evt.evt.sms_list.res = err;                 \
+    gsmi_send_cb(GSM_EVT_SMS_LIST);                 \
+} while (0)
+
+/**
+ * \brief           Send SMS send operation event
+ * \param[in]       m: SMS send message
+ * \param[in]       err: Error of type \ref gsmr_t
+ */
+#define SMS_SEND_SEND_EVT(m, err)     do {          \
+    gsm.evt.evt.sms_send.pos = (m)->msg.sms_send.pos;   \
+    gsm.evt.evt.sms_send.res = err;                 \
+    gsmi_send_cb(GSM_EVT_SMS_SEND);                 \
+} while (0)
+
 
 const char * gsmi_dbg_msg_to_string(gsm_cmd_t cmd);
 gsmr_t      gsmi_process(const void* data, size_t len);

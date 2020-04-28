@@ -286,6 +286,19 @@ typedef enum {
 } gsm_network_reg_status_t;
 
 /**
+ * \ingroup         EGPRS_NETWORK
+ * \brief           EGPRS Network Registration status
+ */
+typedef enum {
+    GSM_NETWORK_REG_EGPRS_STATUS_SIM_ERR = 0x00,      /*!< SIM card error */
+    GSM_NETWORK_REG_EGPRS_STATUS_CONNECTED = 0x01,    /*!< Device is connected to network */
+    GSM_NETWORK_REG_EGPRS_STATUS_SEARCHING = 0x02,    /*!< Network search is in progress */
+    GSM_NETWORK_REG_EGPRS_STATUS_DENIED = 0x03,       /*!< Registration denied */
+    GSM_NETWORK_REG_EGPRS_STATUS_UNKNOWN = 0x04,      /*!< UNKNOWN */
+    GSM_NETWORK_REG_EGPRS_STATUS_CONNECTED_ROAMING = 0x05,/*!< Device is connected and is roaming */
+} gsm_network_reg_egprs_status_t;
+
+/**
  * \ingroup         GSM_CALL
  * \brief           List of call directions
  */
@@ -386,20 +399,18 @@ typedef enum gsm_cb_type_t {
     GSM_EVT_OPERATOR_SCAN,                      /*!< Operator scan finished event */
 
     GSM_EVT_NETWORK_OPERATOR_CURRENT,           /*!< Current operator event */
-    GSM_EVT_NETWORK_REG_CHANGED,                /*!< Network registration changed. Available even when \ref GSM_CFG_NETWORK is disabled */
-#if GSM_CFG_NETWORK || __DOXYGEN__
+    GSM_EVT_NETWORK_REG_CHANGED,                /*!< Network registration changed. */
+    GSM_EVT_NETWORK_REG_EGPRS_CHANGED,          /*!< EGPRS Network registration changed. */
     GSM_EVT_NETWORK_ATTACHED,                   /*!< Attached to network, PDP context active and ready for TCP/IP application */
     GSM_EVT_NETWORK_DETACHED,                   /*!< Detached from network, PDP context not active anymore */
-#endif /* GSM_CFG_NETWORK || __DOXYGEN__ */
+    GSM_EVT_NETWORK_INFO,                       /*!< Network info updated */
 
-#if GSM_CFG_CONN || __DOXYGEN__
     GSM_EVT_CONN_RECV,                          /*!< Connection data received */
     GSM_EVT_CONN_SEND,                          /*!< Connection data send */
     GSM_EVT_CONN_ACTIVE,                        /*!< Connection just became active */
     GSM_EVT_CONN_ERROR,                         /*!< Client connection start was not successful */
     GSM_EVT_CONN_CLOSE,                         /*!< Connection close event. Check status if successful */
     GSM_EVT_CONN_POLL,                          /*!< Poll for connection if there are any changes */
-#endif /* GSM_CFG_CONN || __DOXYGEN__ */
 
 #if GSM_CFG_SMS || __DOXYGEN__
     GSM_EVT_SMS_ENABLE,                         /*!< SMS enable event */
@@ -423,6 +434,8 @@ typedef enum gsm_cb_type_t {
     GSM_EVT_PB_LIST,                            /*!< Phonebook list event */
     GSM_EVT_PB_SEARCH,                          /*!< Phonebook search event */
 #endif /* GSM_CFG_PHONEBOOK || __DOXYGEN__ */
+    GSM_EVT_BAUDRATE_CHANGED,
+    GSM_EVT_PDP_IP_ADDR,                        /*!< PDP address (myIP) updated */
 } gsm_evt_type_t;
 
 /**
@@ -455,7 +468,6 @@ typedef struct gsm_evt {
             int16_t rssi;                       /*!< Strength in units of dBm */
         } rssi;                                 /*!< Signal strength event. Use with \ref GSM_EVT_SIGNAL_STRENGTH event */
 
-#if GSM_CFG_CONN || __DOXYGEN__
         struct {
             gsm_conn_p conn;                    /*!< Connection where data were received */
             gsm_pbuf_p buff;                    /*!< Pointer to received data */
@@ -481,7 +493,6 @@ typedef struct gsm_evt {
         struct {
             gsm_conn_p conn;                    /*!< Set connection pointer */
         } conn_poll;                            /*!< Polling active connection to check for timeouts. Use with \ref GSM_EVT_CONN_POLL event */
-#endif /* GSM_CFG_CONN || __DOXYGEN__ */
 
 #if GSM_CFG_SMS || __DOXYGEN__
         struct {
@@ -537,6 +548,15 @@ typedef struct gsm_evt {
             gsmr_t res;                         /*!< Operation success */
         } pb_search;                            /*!< Phonebok search list. Use with \ref GSM_EVT_PB_SEARCH event */
 #endif /* GSM_CFG_PHONEBOOK || __DOXYGEN__ */
+        struct {
+            uint32_t baudrate;                  /*!< baudrate */
+        } ipr;                                  /*!< new baudrate. Use with \ref GSM_EVT_BAUDRATE_CHANGED event */
+        struct {
+            const char *info;                   /*!< network state */
+        } network;                              /*!< network event */
+        struct {
+            gsm_ip_t ip;                        /*!< PDP address (myIP) */
+        } pdp;
     } evt;                                      /*!< Callback event union */
 } gsm_evt_t;
 
@@ -570,6 +590,7 @@ typedef struct {
     gsm_ll_send_fn send_fn;                     /*!< Callback function to transmit data */
     gsm_ll_reset_fn reset_fn;                   /*!< Reset callback function */
     struct {
+        uint32_t device_port;                   /*!< COM? for win32, UART/SPI for STM32 */
         uint32_t baudrate;                      /*!< UART baudrate value */
     } uart;                                     /*!< UART communication parameters */
 } gsm_ll_t;

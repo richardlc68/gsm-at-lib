@@ -5,7 +5,7 @@
  * \brief           SIM card pin code
  */
 static const char *
-pin_code = "7958";
+pin_code = "";
 
 /**
  * \brief           SIM card puk code

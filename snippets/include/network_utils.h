@@ -8,6 +8,7 @@
 extern "C" {
 #endif /* __cplusplus */
 
+void    network_utils_process_reg_egprs_change(gsm_evt_t* evt);
 void    network_utils_process_reg_change(gsm_evt_t* evt);
 void    network_utils_process_curr_operator(gsm_evt_t* evt);
 void    network_utils_process_rssi(gsm_evt_t* evt);

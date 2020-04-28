@@ -36,8 +36,6 @@
 #include "gsm/gsm_mem.h"
 #include "gsm/gsm_timeout.h"
 
-#if GSM_CFG_CONN || __DOXYGEN__
-
 /**
  * \brief           Check if connection is closed or in closing state
  * \param[in]       conn: Connection handle
@@ -199,8 +197,8 @@ gsm_conn_start(gsm_conn_p* conn, gsm_conn_type_t type, const char* const host, g
     GSM_ASSERT("conn_evt_fn != NULL", conn_evt_fn != NULL);
 
     GSM_MSG_VAR_ALLOC(msg, blocking);
-    GSM_MSG_VAR_REF(msg).cmd_def = GSM_CMD_CIPSTART;
-    GSM_MSG_VAR_REF(msg).cmd = GSM_CMD_CIPSTATUS;
+    GSM_MSG_VAR_REF(msg).cmd_def = gsm.m.me->GSM_CMD_SOCKET_OPEN;
+    GSM_MSG_VAR_REF(msg).cmd = gsm.m.me->GSM_CMD_SOCKET_STA;
     GSM_MSG_VAR_REF(msg).msg.conn_start.num = GSM_CFG_MAX_CONNS;/* Set maximal value as invalid number */
     GSM_MSG_VAR_REF(msg).msg.conn_start.conn = conn;
     GSM_MSG_VAR_REF(msg).msg.conn_start.type = type;
@@ -377,7 +375,7 @@ gsm_get_conns_status(const uint32_t blocking) {
     GSM_MSG_VAR_DEFINE(msg);
 
     GSM_MSG_VAR_ALLOC(msg, blocking);
-    GSM_MSG_VAR_REF(msg).cmd_def = GSM_CMD_CIPSTATUS;
+    GSM_MSG_VAR_REF(msg).cmd_def = gsm.m.me->GSM_CMD_SOCKET_STA;
 
     return gsmi_send_msg_to_producer_mbox(&GSM_MSG_VAR_REF(msg), gsmi_initiate_cmd, 1000);
 }
@@ -640,4 +638,3 @@ gsm_conn_get_local_port(gsm_conn_p conn) {
     return port;
 }
 
-#endif /* GSM_CFG_CONN || __DOXYGEN__ */

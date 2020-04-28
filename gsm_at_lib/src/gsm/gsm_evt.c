@@ -181,8 +181,6 @@ gsm_evt_signal_strength_get_rssi(gsm_evt_t* cc) {
     return cc->evt.rssi.rssi;
 }
 
-#if GSM_CFG_CONN || __DOXYGEN__
-
 /**
  * \brief           Get buffer from received data
  * \param[in]       cc: Event handle
@@ -352,8 +350,6 @@ void *
 gsm_evt_conn_error_get_arg(gsm_evt_t* cc) {
     return cc->evt.conn_error.arg;
 }
-
-#endif /* GSM_CFG_CONN || __DOXYGEN__ */
 
 #if GSM_CFG_SMS || __DOXYGEN__
 

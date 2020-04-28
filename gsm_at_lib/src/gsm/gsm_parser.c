@@ -326,14 +326,46 @@ gsmi_parse_creg(const char* str, uint8_t skip_first) {
         /* Try to get operator */
         /* Notify user in case we are not able to add new command to queue */
         gsm_operator_get(&gsm.m.network.curr_operator, NULL, NULL, 0);
-#if GSM_CFG_NETWORK
     } else if (gsm_network_is_attached()) {
         gsm_network_check_status(NULL, NULL, 0);    /* Do the update */
-#endif /* GSM_CFG_NETWORK */
     }
 
     /* Send callback event */
     gsmi_send_cb(GSM_EVT_NETWORK_REG_CHANGED);
+
+    return 1;
+}
+
+/**
+ * \brief           Parse received +CGREG message
+ * \param[in]       str: Input string to parse from
+ * \param[in]       skip_first: Set to `1` to skip first number
+ * \return          1 on success, 0 otherwise
+ */
+uint8_t
+gsmi_parse_cgreg(const char* str, uint8_t skip_first) {
+    if (*str == '+') {
+        str += 8;
+    }
+
+    if (skip_first) {
+        gsmi_parse_number(&str);
+    }
+    gsm.m.network.egprs = (gsm_network_reg_egprs_status_t)gsmi_parse_number(&str);
+
+    /*
+     * In case we are connected to network,
+     * scan for current network info
+     */
+    if (gsm.m.network.egprs == GSM_NETWORK_REG_EGPRS_STATUS_CONNECTED ||
+        gsm.m.network.egprs == GSM_NETWORK_REG_EGPRS_STATUS_CONNECTED_ROAMING) {
+      /* do nothing*/
+    } else if (gsm_network_is_attached()) {
+        gsm_network_check_status(NULL, NULL, 0);    /* Do the update */
+    }
+
+    /* Send callback event */
+    gsmi_send_cb(GSM_EVT_NETWORK_REG_EGPRS_CHANGED);
 
     return 1;
 }
@@ -857,89 +889,6 @@ gsmi_parse_cpbf(const char* str) {
 
 #endif /* GSM_CFG_PHONEBOOK || __DOXYGEN__ */
 
-#if GSM_CFG_CONN
-
-/**
- * \brief           Parse connection info line from CIPSTATUS command
- * \param[in]       str: Input string
- * \param[in]       is_conn_line: Set to `1` for connection, `0` for general status
- * \param[out]      continueScan: Pointer to output variable holding continue processing state
- * \return          `1` on success, `0` otherwise
- */
-uint8_t
-gsmi_parse_cipstatus_conn(const char* str, uint8_t is_conn_line, uint8_t* continueScan) {
-    uint8_t num;
-    gsm_conn_t* conn;
-    char s_tmp[16];
-    uint8_t tmp_pdp_state;
-
-    *continueScan = 1;
-    if (is_conn_line && (*str == 'C' || *str == 'S')) {
-        str += 3;
-    } else {
-        /* Check if PDP context is deactivated or not */
-        tmp_pdp_state = 1;
-        if (!strncmp(&str[7], "IP INITIAL", 10)) {
-            *continueScan = 0;                  /* Stop command execution at this point (no OK,ERROR received after this line) */
-            tmp_pdp_state = 0;
-        } else if (!strncmp(&str[7], "PDP DEACT", 9)) {
-            /* Deactivated */
-            tmp_pdp_state = 0;
-        }
-
-        /* Check if we have to update status for application */
-        if (gsm.m.network.is_attached != tmp_pdp_state) {
-            gsm.m.network.is_attached = tmp_pdp_state;
-
-            /* Notify upper layer */
-            gsmi_send_cb(gsm.m.network.is_attached ? GSM_EVT_NETWORK_ATTACHED : GSM_EVT_NETWORK_DETACHED);
-        }
-
-        return 1;
-    }
-
-    /* Parse connection line */
-    num = GSM_U8(gsmi_parse_number(&str));
-    conn = &gsm.m.conns[num];
-
-    conn->status.f.bearer = GSM_U8(gsmi_parse_number(&str));
-    gsmi_parse_string(&str, s_tmp, sizeof(s_tmp), 1);   /* Parse TCP/UPD */
-    if (strlen(s_tmp)) {
-        if (!strcmp(s_tmp, "TCP")) {
-            conn->type = GSM_CONN_TYPE_TCP;
-        } else if (!strcmp(s_tmp, "UDP")) {
-            conn->type = GSM_CONN_TYPE_UDP;
-        }
-    }
-    gsmi_parse_ip(&str, &conn->remote_ip);
-    conn->remote_port = gsmi_parse_number(&str);
-
-    /* Get connection status */
-    gsmi_parse_string(&str, s_tmp, sizeof(s_tmp), 1);
-
-    /* TODO: Implement all connection states */
-    if (!strcmp(s_tmp, "INITIAL")) {
-
-    } else if (!strcmp(s_tmp, "CONNECTING")) {
-
-    } else if (!strcmp(s_tmp, "CONNECTED")) {
-
-    } else if (!strcmp(s_tmp, "REMOTE CLOSING")) {
-
-    } else if (!strcmp(s_tmp, "CLOSING")) {
-
-    } else if (!strcmp(s_tmp, "CLOSED")) {      /* Connection closed */
-        if (conn->status.f.active) {            /* Check if connection is not */
-            gsmi_conn_closed_process(conn->num, 0); /* Process closed event */
-        }
-    }
-
-    /* Save last parsed connection */
-    gsm.m.active_conns_cur_parse_num = num;
-
-    return 1;
-}
-
 /**
  * \brief           Parse IPD or RECEIVE statements
  * \param[in]       str: Input string
@@ -976,4 +925,17 @@ gsmi_parse_ipd(const char* str) {
     return 1;
 }
 
-#endif /* GSM_CFG_CONN */
+/**
+ * \brief           Parse +CGPADDR string from AT+CGPADDR command
+ * \param[in]       str: Input string
+ * \return          1 on success, 0 otherwise
+ */
+uint8_t
+gsmi_parse_pdp_address(const char* str) {
+    str += 10;       /* +CGPADDR: 1,25.106.145.192\r\n */
+    gsmi_parse_number(&str); //skip first digit
+    if (gsmi_parse_ip(&str, &gsm.evt.evt.pdp.ip)) {
+        gsmi_send_cb(GSM_EVT_PDP_IP_ADDR);
+    }
+    return 1;
+}

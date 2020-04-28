@@ -47,6 +47,7 @@ uint8_t     gsmi_parse_mac(const char** src, gsm_mac_t* mac);
 
 uint8_t     gsmi_parse_cpin(const char* str, uint8_t send_evt);
 uint8_t     gsmi_parse_creg(const char* str, uint8_t skip_first);
+uint8_t     gsmi_parse_cgreg(const char* str, uint8_t skip_first);
 uint8_t     gsmi_parse_csq(const char* str);
 
 uint8_t     gsmi_parse_cmgs(const char* str, size_t* num);
@@ -65,9 +66,9 @@ uint8_t     gsmi_parse_cpms(const char* str, uint8_t opt);
 uint8_t     gsmi_parse_cpbr(const char* str);
 uint8_t     gsmi_parse_cpbf(const char* str);
 
-uint8_t     gsmi_parse_cipstatus_conn(const char* str, uint8_t is_conn_line, uint8_t* continueScan);
-
 uint8_t     gsmi_parse_ipd(const char* str);
+uint8_t     gsmi_parse_pdp_address(const char* str);
+
 
 #if defined(__cplusplus)
 }

@@ -146,6 +146,20 @@
 #endif
 
 /**
+ * \brief           Default port number used for AT
+ *
+ * \note            for STM32, this could be address of UARTx or SPIx, for win32: simple as COMx
+ */
+#ifndef GSM_CFG_AT_PORT_NUMBER
+#define GSM_CFG_AT_PORT_NUMBER             5
+#endif
+ 
+/**
+* \brief           Default not support call (BG95)
+*/
+#define GSM_CFG_CALL                            0
+
+/**
  * \brief           Buffer size for received data waiting to be processed
  * \note            When server mode is active and a lot of connections are in queue
  *                  this should be set high otherwise your buffer may overflow
@@ -415,16 +429,6 @@
  */
 
 /**
- * \brief           Enables `1` or disables `0` NETCONN sequential API support for OS systems
- *
- * \note            To use this feature, OS support is mandatory.
- * \sa              GSM_CFG_OS
- */
-#ifndef GSM_CFG_NETCONN
-#define GSM_CFG_NETCONN                     0
-#endif
-
-/**
  * \brief           Enables `1` or disables `0` receive timeout feature
  *
  * When this option is enabled, user will get an option
@@ -497,17 +501,6 @@
  */
 
 /**
- * \brief           Enables `1` or disables `0` network functionality
- *                      used for TCP/IP communication
- *
- * Network must be enabled to use all GPRS/LTE functions such
- * as connection API, FTP, HTTP, etc.
- */
-#ifndef GSM_CFG_NETWORK
-#define GSM_CFG_NETWORK                     0
-#endif
-
-/**
  * \brief           Ignores `1` or not `0` result from `AT+CGACT` command.
  *
  * \note            This may be used for data-only SIM cards where command might fail
@@ -518,20 +511,11 @@
 #endif
 
 /**
- * \brief           Enables `1` or disables `0` connection API.
- *
- * \note            \ref GSM_CFG_NETWORK must be enabled to use connection feature
- */
-#ifndef GSM_CFG_CONN
-#define GSM_CFG_CONN                        0
-#endif
-
-/**
  * \brief           Enables `1` or disables `0` SMS API.
  *
  */
 #ifndef GSM_CFG_SMS
-#define GSM_CFG_SMS                         0
+#define GSM_CFG_SMS                         1
 #endif
 
 /**
@@ -552,8 +536,6 @@
 
 /**
  * \brief           Enables `1` or disables `0` HTTP API.
- *
- * \note            \ref GSM_CFG_NETWORK must be enabled to use connection feature
  */
 #ifndef GSM_CFG_HTTP
 #define GSM_CFG_HTTP                        0
@@ -561,8 +543,6 @@
 
 /**
  * \brief           Enables `1` or disables `0` FTP API.
- *
- * \note            \ref GSM_CFG_NETWORK must be enabled to use connection feature
  */
 #ifndef GSM_CFG_FTP
 #define GSM_CFG_FTP                         0
@@ -570,8 +550,6 @@
 
 /**
  * \brief           Enables `1` or disables `0` PING API.
- *
- * \note            \ref GSM_CFG_NETWORK must be enabled to use connection feature
  */
 #ifndef GSM_CFG_PING
 #define GSM_CFG_PING                        0

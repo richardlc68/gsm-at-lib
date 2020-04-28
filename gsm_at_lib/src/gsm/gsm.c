@@ -56,6 +56,12 @@ def_callback(gsm_evt_t* evt) {
     return gsmOK;
 }
 
+gsmr_t gsm_change_baudrate(uint32_t bps) {
+    gsm.ll.uart.baudrate = bps;
+    gsm.ll.uart.device_port = GSM_CFG_AT_PORT_NUMBER;
+    return configure_uart(gsm.ll.uart.device_port,bps);
+}
+
 /**
  * \brief           Init and prepare GSM stack for device operation
  * \note            Function must be called from operating system thread context.
@@ -120,6 +126,7 @@ gsm_init(gsm_evt_fn evt_func, const uint32_t blocking) {
 
     gsm_core_lock();
     gsm.ll.uart.baudrate = GSM_CFG_AT_PORT_BAUDRATE;
+    gsm.ll.uart.device_port = GSM_CFG_AT_PORT_NUMBER;
     gsm_ll_init(&gsm.ll);                       /* Init low-level communication */
 
 #if !GSM_CFG_INPUT_USE_PROCESS

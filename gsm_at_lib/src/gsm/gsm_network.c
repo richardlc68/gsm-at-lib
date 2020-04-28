@@ -35,8 +35,6 @@
 #include "gsm/gsm_network.h"
 #include "gsm/gsm_mem.h"
 
-#if GSM_CFG_NETWORK || __DOXYGEN__
-
 /**
  * \brief           Attach to network and active PDP context
  * \param[in]       apn: APN name
@@ -55,9 +53,7 @@ gsm_network_attach(const char* apn, const char* user, const char* pass,
     GSM_MSG_VAR_ALLOC(msg, blocking);
     GSM_MSG_VAR_SET_EVT(msg, evt_fn, evt_arg);
     GSM_MSG_VAR_REF(msg).cmd_def = GSM_CMD_NETWORK_ATTACH;
-#if GSM_CFG_CONN
-    GSM_MSG_VAR_REF(msg).cmd = GSM_CMD_CIPSTATUS;
-#endif /* GSM_CFG_CONN */
+    GSM_MSG_VAR_REF(msg).cmd = GSM_CMD_NETWORK_ATTACH;
     GSM_MSG_VAR_REF(msg).msg.network_attach.apn = apn;
     GSM_MSG_VAR_REF(msg).msg.network_attach.user = user;
     GSM_MSG_VAR_REF(msg).msg.network_attach.pass = pass;
@@ -79,9 +75,7 @@ gsm_network_detach(const gsm_api_cmd_evt_fn evt_fn, void* const evt_arg, const u
     GSM_MSG_VAR_ALLOC(msg, blocking);
     GSM_MSG_VAR_SET_EVT(msg, evt_fn, evt_arg);
     GSM_MSG_VAR_REF(msg).cmd_def = GSM_CMD_NETWORK_DETACH;
-#if GSM_CFG_CONN
-    /* GSM_MSG_VAR_REF(msg).cmd = GSM_CMD_CIPSTATUS; */
-#endif /* GSM_CFG_CONN */
+    /* GSM_MSG_VAR_REF(msg).cmd = gsm.m.me->GSM_CMD_SOCKET_STA; */
 
     return gsmi_send_msg_to_producer_mbox(&GSM_MSG_VAR_REF(msg), gsmi_initiate_cmd, 60000);
 }
@@ -99,7 +93,7 @@ gsm_network_check_status(const gsm_api_cmd_evt_fn evt_fn, void* const evt_arg, c
 
     GSM_MSG_VAR_ALLOC(msg, blocking);
     GSM_MSG_VAR_SET_EVT(msg, evt_fn, evt_arg);
-    GSM_MSG_VAR_REF(msg).cmd_def = GSM_CMD_CIPSTATUS;
+    GSM_MSG_VAR_REF(msg).cmd_def = gsm.m.me->GSM_CMD_SOCKET_STA;
 
     return gsmi_send_msg_to_producer_mbox(&GSM_MSG_VAR_REF(msg), gsmi_initiate_cmd, 60000);
 }
@@ -133,8 +127,6 @@ gsm_network_is_attached(void) {
     return res;
 }
 
-#endif /* GSM_CFG_NETWORK || __DOXYGEN__ */
-
 /**
  * \brief           Read RSSI signal from network operator
  * \param[out]      rssi: RSSI output variable. When set to `0`, RSSI is not valid
@@ -165,6 +157,19 @@ gsm_network_get_reg_status(void) {
     gsm_network_reg_status_t ret;
     gsm_core_lock();
     ret = gsm.m.network.status;
+    gsm_core_unlock();
+    return ret;
+}
+
+/**
+ * \brief           Get EGPRS network registration status
+ * \return          Member of \ref gsm_network_reg_egprs_status_t enumeration
+ */
+gsm_network_reg_egprs_status_t
+gsm_network_get_reg_egprs_status(void) {
+    gsm_network_reg_egprs_status_t ret;
+    gsm_core_lock();
+    ret = gsm.m.network.egprs;
     gsm_core_unlock();
     return ret;
 }

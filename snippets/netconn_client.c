@@ -2,12 +2,10 @@
 #include "gsm/gsm.h"
 #include "gsm/gsm_network_api.h"
 
-#if GSM_CFG_NETCONN
-
 /**
  * \brief           Host and port settings
  */
-#define NETCONN_HOST        "example.com"
+#define NETCONN_HOST        "google.com"
 #define NETCONN_PORT        80
 
 /**
@@ -34,6 +32,7 @@ netconn_client_thread(void const* arg) {
     /* Request attach to network */
     while (gsm_network_request_attach() != gsmOK) {
         gsm_delay(1000);
+        printf("wait network attached\r\n");
     }
 
     /*
@@ -119,5 +118,3 @@ netconn_client_thread(void const* arg) {
     }
     gsm_sys_thread_terminate(NULL);             /* Terminate current thread */
 }
-
-#endif /* GSM_CFG_NETCONN */

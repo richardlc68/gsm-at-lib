@@ -36,13 +36,6 @@
 #include "gsm/gsm_conn.h"
 #include "gsm/gsm_mem.h"
 
-#if GSM_CFG_NETCONN || __DOXYGEN__
-
-/* Check conditions */
-#if !GSM_CFG_CONN
-#error "GSM_CFG_CONN must be enabled for NETCONN API!"
-#endif /* !GSM_CFG_CONN */
-
 #if GSM_CFG_NETCONN_RECEIVE_QUEUE_LEN < 2
 #error "GSM_CFG_NETCONN_RECEIVE_QUEUE_LEN must be greater or equal to 2"
 #endif /* GSM_CFG_NETCONN_RECEIVE_QUEUE_LEN < 2 */
@@ -554,5 +547,3 @@ gsm_netconn_get_receive_timeout(gsm_netconn_p nc) {
 }
 
 #endif /* GSM_CFG_NETCONN_RECEIVE_TIMEOUT || __DOXYGEN__ */
-
-#endif /* GSM_CFG_NETCONN || __DOXYGEN__ */
