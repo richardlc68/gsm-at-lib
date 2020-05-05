@@ -258,7 +258,9 @@ typedef enum {
     GSM_CMD_QIACT_SET,                          /*!< Activate a PDP Context */
     GSM_CMD_QIACT_GET,                          /*!< Get activate PDP Context(s) */
     GSM_CMD_QISTATE,                            /*!< Query Socket Service Status */
-    GSM_CMD_QIOPEN,                             /*!< Start Up TCP or UDP Connection -- same as GSM_CMD_CIPSTART*/
+    GSM_CMD_QIOPEN,                             /*!< Start Up TCP or UDP Connection -- same as GSM_CMD_CIPSTART */
+    GSM_CMD_QISEND,                             /*!< Send Data */
+    GSM_CMD_QICLOSE,                            /*!< Close a socket service */
 /* end of AT commands for Quetel module */
 
     GSM_CMD_SMS_ENABLE,

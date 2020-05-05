@@ -118,7 +118,7 @@ usart_ll_thread(void* arg) {
 /**
  * \brief           Configure UART using DMA for receive in double buffer mode and IDLE line detection
  */
-static void
+gsmr_t
 configure_uart(uint32_t baudrate) {
     static LL_USART_InitTypeDef usart_init;
     static LL_DMA_InitTypeDef dma_init;
@@ -253,6 +253,7 @@ configure_uart(uint32_t baudrate) {
         };
         usart_ll_thread_id = osThreadNew(usart_ll_thread, usart_ll_mbox_id, &attr);
     }
+    return gsmOK;
 }
 
 #if defined(GSM_RESET_PIN)

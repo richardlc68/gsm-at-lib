@@ -48,6 +48,7 @@ extern "C" {
 
 gsmr_t      gsm_ll_init(gsm_ll_t* ll);
 gsmr_t      gsm_ll_deinit(gsm_ll_t* ll);
+gsmr_t configure_uart(uint32_t baudrate);
 
 /**
  * \}

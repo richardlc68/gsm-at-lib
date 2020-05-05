@@ -59,7 +59,7 @@ def_callback(gsm_evt_t* evt) {
 gsmr_t gsm_change_baudrate(uint32_t bps) {
     gsm.ll.uart.baudrate = bps;
     gsm.ll.uart.device_port = GSM_CFG_AT_PORT_NUMBER;
-    return configure_uart(gsm.ll.uart.device_port,bps);
+    return configure_uart(bps);
 }
 
 /**
