@@ -157,7 +157,9 @@
 /**
 * \brief           Default not support call (BG95)
 */
-#define GSM_CFG_CALL                            0
+#ifndef GSM_CFG_CALL
+#define GSM_CFG_CALL                       0
+#endif
 
 /**
  * \brief           Buffer size for received data waiting to be processed
