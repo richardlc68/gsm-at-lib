@@ -584,11 +584,28 @@ typedef uint8_t (*gsm_ll_reset_fn)(uint8_t state);
 
 /**
  * \ingroup         GSM_LL
+ * \brief           Function prototype for hardware status(DO) of GSM device
+ * \param[in]       state: State indicating device power up/down. `1` indicate as powered up, '0' when shutdown
+ * \return          `1` on powered up, `0` otherwise
+ */
+typedef uint8_t (*gsm_ll_status_fn)(void);
+
+/**
+ * \ingroup         GSM_LL
+ * \brief           Function prototype for hardware powerkey of GSM device
+ * \param[in]       up: `1` for powerkey to power-up, or `0` to power-down
+ */
+typedef void (*gsm_ll_powerkey_fn)(uint8_t up);
+
+/**
+ * \ingroup         GSM_LL
  * \brief           Low level user specific functions
  */
 typedef struct {
     gsm_ll_send_fn send_fn;                     /*!< Callback function to transmit data */
     gsm_ll_reset_fn reset_fn;                   /*!< Reset callback function */
+    gsm_ll_powerkey_fn device_powerkey;         /*!< Powerkey callback function */
+    gsm_ll_status_fn device_sta;                /*!< Status callback function */
     struct {
         uint32_t device_port;                   /*!< COM? for win32, UART/SPI for STM32 */
         uint32_t baudrate;                      /*!< UART baudrate value */

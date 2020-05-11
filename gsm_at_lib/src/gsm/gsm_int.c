@@ -1413,11 +1413,20 @@ gsmi_initiate_cmd(gsm_msg_t* msg) {
     char bad_idea[256];
     switch (CMD_GET_CUR()) {                    /* Check current message we want to send over AT */
         case GSM_CMD_RESET: {                   /* Reset modem with AT commands */
-            /* Try with hardware reset */
-            if (gsm.ll.reset_fn != NULL && gsm.ll.reset_fn(1)) {
-                gsm_delay(2);
-                gsm.ll.reset_fn(0);
-                gsm_delay(500);
+            if ((gsm.ll.device_sta != NULL) && (gsm.ll.device_powerkey != NULL)) {
+                /* note: BG95 with vdd_ext being shutdown, OE is low, here is hack */
+#if 0
+                /* power down hardware if already on */
+                if(1==gsm.ll.device_sta()) {
+                    gsm.ll.device_powerkey(0); /* power-down */ //key=tp16 sta=tp17
+                    gsm_delay(5000); /* BG95 3.6.2.1 */
+                };
+                /* BG95 hack: ignore - power up */
+                if(1==gsm.ll.device_sta()) {
+                    gsm.ll.device_powerkey(1); /* power-up */
+                    gsm_delay(2500); /* BG95 3.6.1*/
+                };
+#endif
             }
 
             /* Send manual AT command */
