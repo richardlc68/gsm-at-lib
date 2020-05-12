@@ -95,7 +95,7 @@ gsmi_initiate_cmd(gsm_msg_t* msg) {
         /* Check if we are connected to network */
 
         msg->msg.conn_start.num = 0;        /* Start with max value = invalidated */
-        for (int16_t i = GSM_CFG_MAX_CONNS - 1; i >= 0; --i) {  /* Find available connection */
+        for (int16_t i = 0; i<GSM_CFG_MAX_CONNS; i++) {  /* Find available connection */
             if (!gsm.m.conns[i].status.f.active) {
                 c = &gsm.m.conns[i];
                 c->num = GSM_U8(i);
@@ -112,17 +112,15 @@ gsmi_initiate_cmd(gsm_msg_t* msg) {
             *msg->msg.conn_start.conn = c;  /* Save connection for user */
         }
 
-        AT_PORT_SEND_CONST_STR("AT+CIPSTART=");
-        gsmi_send_number(GSM_U32(c->num), 0, 0);
-        if (msg->msg.conn_start.type == GSM_CONN_TYPE_TCP) {
-            gsmi_send_string("TCP", 0, 1, 1);
-        }
-        else if (msg->msg.conn_start.type == GSM_CONN_TYPE_UDP) {
-            gsmi_send_string("UDP", 0, 1, 1);
-        }
-        gsmi_send_string(msg->msg.conn_start.host, 0, 1, 1);
-        gsmi_send_port(msg->msg.conn_start.port, 0, 1);
-        AT_PORT_SEND_END_AT();
+        sprintf(bad_idea, "AT+QIOPEN=1,%d,\"%s\",\"%s\",%d,%d" CRLF,
+                msg->msg.conn_start.num,
+                (msg->msg.conn_start.type == GSM_CONN_TYPE_TCP) ? "TCP" : "UDP",
+                msg->msg.conn_start.host,
+                msg->msg.conn_start.port,
+                0 //If <service_type> is "TCP LISTENER" or "UDP SERVICE", this parameter must be specified.
+                  //If <service_type> is "TCP" or "UDP": the local port will be assigned automatically if <local_port> is 0
+        );
+        AT_PORT_SEND_STR(bad_idea);
         break;
     }
     case GSM_CMD_CIPCLOSE: {          /* Close the connection */
@@ -277,17 +275,19 @@ gsmi_process_sub_cmd(gsm_msg_t* msg, uint8_t* is_ok, uint16_t* is_error) {
         }
         break;
 
-    case GSM_CMD_SOCKET_OPEN:
+    case GSM_CMD_QIOPEN:
         if (!msg->i && CMD_IS_CUR(GSM_CMD_QISTATE)) { /* Was the current command status info? */
             if (*is_ok) {
                 SET_NEW_CMD(GSM_CMD_QIOPEN);      /* Now actually start connection */
             }
-        } else if (msg->i == 1 && CMD_IS_CUR(GSM_CMD_QIOPEN)) {
+        } 
+        else if (msg->i == 1 && CMD_IS_CUR(GSM_CMD_QIOPEN)) {
+            gsm_delay(100);
             SET_NEW_CMD(GSM_CMD_QISTATE);     /* Go to status mode */
             if (*is_error) {
                 msg->msg.conn_start.conn_res = GSM_CONN_CONNECT_ERROR;
             }
-        } else if (msg->i == 2 && CMD_IS_CUR(GSM_CMD_QISTATE)) {
+        } else if (msg->i < 3 && CMD_IS_CUR(GSM_CMD_QISTATE)) {
             /* After second QISTATE status, define what to do next */
             switch (msg->msg.conn_start.conn_res) {
                 case GSM_CONN_CONNECT_OK: {     /* Successfully connected */
@@ -309,13 +309,19 @@ gsmi_process_sub_cmd(gsm_msg_t* msg, uint8_t* is_ok, uint16_t* is_error) {
                 }
                 default: {
                     /* Do nothing as of now */
+                    gsm_delay(100);
+                    SET_NEW_CMD(GSM_CMD_QISTATE);     /* Go to status mode */
                     break;
                 }
             }
         }
+        else {
+            msg->i=100;
+            //test
+        }
         break;
 
-    case GSM_CMD_SOCKET_CLOSE:
+    case GSM_CMD_QICLOSE:
         /*
          * It is unclear in which state connection is when ERROR is received on close command.
          * Stack checks if connection is closed before it allows and sends close command,
@@ -324,7 +330,7 @@ gsmi_process_sub_cmd(gsm_msg_t* msg, uint8_t* is_ok, uint16_t* is_error) {
          *
          * Is it device firmware bug?
          */
-        if (CMD_IS_CUR(GSM_CMD_CIPCLOSE) && *is_error) {
+        if (CMD_IS_CUR(GSM_CMD_QICLOSE) && *is_error) {
             /* Notify upper layer about failed close event */
             gsm.evt.type = GSM_EVT_CONN_CLOSE;
             gsm.evt.evt.conn_active_close.conn = msg->msg.conn_close.conn;
@@ -372,47 +378,23 @@ gsmi_parse_nwinfo(const char* str) {
 /**
  * \brief           Parse connection info line from CIPSTATUS command
  * \param[in]       str: Input string
- * \param[in]       is_conn_line: Set to `1` for connection, `0` for general status
  * \param[out]      continueScan: Pointer to output variable holding continue processing state
  * \return          `1` on success, `0` otherwise
  */
 static uint8_t
-gsmi_parse_socket_conn(const char* str, uint8_t is_conn_line, uint8_t* continueScan) {
+gsmi_parse_socket_conn(const char* str, uint8_t* continueScan) {
     uint8_t num;
     gsm_conn_t* conn;
     char s_tmp[16];
     uint8_t tmp_pdp_state;
 
     *continueScan = 1;
-    if (is_conn_line && (*str == 'C' || *str == 'S')) {
-        str += 3;
-    } else {
-        /* Check if PDP context is deactivated or not */
-        tmp_pdp_state = 1;
-        if (!strncmp(&str[7], "IP INITIAL", 10)) {
-            *continueScan = 0;                  /* Stop command execution at this point (no OK,ERROR received after this line) */
-            tmp_pdp_state = 0;
-        } else if (!strncmp(&str[7], "PDP DEACT", 9)) {
-            /* Deactivated */
-            tmp_pdp_state = 0;
-        }
-
-        /* Check if we have to update status for application */
-        if (gsm.m.network.is_attached != tmp_pdp_state) {
-            gsm.m.network.is_attached = tmp_pdp_state;
-
-            /* Notify upper layer */
-            gsmi_send_cb(gsm.m.network.is_attached ? GSM_EVT_NETWORK_ATTACHED : GSM_EVT_NETWORK_DETACHED);
-        }
-
-        return 1;
-    }
+    str += 10;
 
     /* Parse connection line */
     num = GSM_U8(gsmi_parse_number(&str));
     conn = &gsm.m.conns[num];
 
-    conn->status.f.bearer = GSM_U8(gsmi_parse_number(&str));
     gsmi_parse_string(&str, s_tmp, sizeof(s_tmp), 1);   /* Parse TCP/UPD */
     if (strlen(s_tmp)) {
         if (!strcmp(s_tmp, "TCP")) {
@@ -423,26 +405,27 @@ gsmi_parse_socket_conn(const char* str, uint8_t is_conn_line, uint8_t* continueS
     }
     gsmi_parse_ip(&str, &conn->remote_ip);
     conn->remote_port = gsmi_parse_number(&str);
+    conn->local_port = gsmi_parse_number(&str);
 
     /* Get connection status */
-    gsmi_parse_string(&str, s_tmp, sizeof(s_tmp), 1);
-
-    /* TODO: Implement all connection states */
-    if (!strcmp(s_tmp, "INITIAL")) {
-
-    } else if (!strcmp(s_tmp, "CONNECTING")) {
-
-    } else if (!strcmp(s_tmp, "CONNECTED")) {
-
-    } else if (!strcmp(s_tmp, "REMOTE CLOSING")) {
-
-    } else if (!strcmp(s_tmp, "CLOSING")) {
-
-    } else if (!strcmp(s_tmp, "CLOSED")) {      /* Connection closed */
-        if (conn->status.f.active) {            /* Check if connection is not */
-            gsmi_conn_closed_process(conn->num, 0); /* Process closed event */
-        }
+    tmp_pdp_state=gsmi_parse_number(&str);
+    switch(tmp_pdp_state) {
+        case 0: //INITIAL
+            break;
+        case 1: //Connecting
+            break;
+        case 2: //Connected
+            break;
+        case 3: //Listening
+            break;
+        case 4: //Closing
+            break;
     }
+//    if (!strcmp(s_tmp, "CLOSED")) {      /* Connection closed */
+//        if (conn->status.f.active) {            /* Check if connection is not */
+//            gsmi_conn_closed_process(conn->num, 0); /* Process closed event */
+//        }
+//    }
 
     /* Save last parsed connection */
     gsm.m.active_conns_cur_parse_num = num;
@@ -466,23 +449,24 @@ static void gsmi_parse_qiact(uint8_t *is_ok, const char* str)
     *is_ok = 1;
 }
 
+static void gsmi_parse_qiopen(uint16_t *is_error, const char* str)
+{
+    str += 9; /* +QIOPEN: 0,0 */
+    gsmi_parse_number(&str); /* skip connectID */
+    int32_t err = (gsmr_t)gsmi_parse_number(&str);
+    if (0 != err) { /* open_state == 0 (success) */
+        *is_error = (gsmr_t)err;
+    }
+}
+
 static void gsmi_parse_socket_sta(uint8_t* is_ok, gsm_recv_t* rcv)
 {
-    /* OK is returned before important data */
-    *is_ok = 0;
     /* Check if connection data received */
     if (rcv->len > 3) {
         uint8_t continueScan, processed = 0;
-        if (rcv->data[0] == 'C' && rcv->data[1] == ':' && rcv->data[2] == ' ') {
+        if (!strncmp(rcv->data, "+QISTATE:", 9)) {
             processed = 1;
-            gsmi_parse_socket_conn(rcv->data, 1, &continueScan);
-
-            if (gsm.m.active_conns_cur_parse_num == (GSM_CFG_MAX_CONNS - 1)) {
-                *is_ok = 1;
-            }
-        } else if (!strncmp(rcv->data, "STATE:", 6)) {
-            processed = 1;
-            gsmi_parse_socket_conn(rcv->data, 0, &continueScan);
+            gsmi_parse_socket_conn(rcv->data, &continueScan);
         }
 
         /* Check if we shall stop processing at this stage */
@@ -505,6 +489,8 @@ gsmi_parse_received_plus(uint8_t *is_ok, uint16_t *is_error, gsm_recv_t* rcv) {
         gsmi_parse_nwinfo(rcv->data);          /* Parse +QNWINFO response */
     } else if (!strncmp(rcv->data, "+QIACT", 6)) {
         gsmi_parse_qiact(is_ok, rcv->data);/* Update status */
+    } else if (!strncmp(rcv->data, "+QIOPEN", 7)) {
+        gsmi_parse_qiopen(is_error, rcv->data);/* Update socket opened or not */
     } else if (!strncmp(rcv->data, "+PDP: DEACT", 11)) {
         /* PDP has been deactivated */
         gsm_network_check_status(NULL, NULL, 0);/* Update status */

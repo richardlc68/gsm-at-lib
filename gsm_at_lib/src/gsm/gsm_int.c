@@ -730,7 +730,7 @@ gsmi_parse_received(gsm_recv_t* rcv) {
         } else if (CMD_IS_CUR(GSM_CMD_CMGS) && is_ok) {
             /* At this point we have to wait for "> " to send data */
 #endif /* GSM_CFG_SMS */
-        } else if (CMD_IS_CUR(GSM_CMD_CIPSTATUS) || CMD_IS_CUR(GSM_CMD_QISTATE)) {
+        } else if (CMD_IS_CUR(gsm.m.me->GSM_CMD_SOCKET_STA)) {
             gsm.m.me->gsmi_parse_socket_sta(&is_ok, rcv);
         } else if (CMD_IS_CUR(GSM_CMD_CIPSTART)) {
             /* For CIPSTART, OK is returned before important data */
@@ -1426,6 +1426,8 @@ gsmi_initiate_cmd(gsm_msg_t* msg) {
                     gsm.ll.device_powerkey(1); /* power-up */
                     gsm_delay(2500); /* BG95 3.6.1*/
                 };
+#else
+                gsm_delay(3000);
 #endif
             }
 
